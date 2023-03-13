@@ -75,6 +75,14 @@
 
 - Path /api/todos
 
+- http-headers 
+
+```text
+    Content-type: application/json
+    Authorization: Bearer token
+```
+
+
 - Response
 
 ```json
@@ -119,6 +127,7 @@
 
 ```text
     Content-type: application/json
+    Authorization: Bearer token
 ```
 
 - Requset
@@ -149,6 +158,13 @@
 - Method http-GET
 
 - Path /api/todo/:todoid
+
+- http-headers 
+
+```text
+    Content-type: application/json
+    Authorization: Bearer token
+```
 
 - Response OK
 
@@ -185,6 +201,14 @@
 - Method http-DELETE
 
 - Path /api/todo/:todoid
+
+- http-headers 
+
+```text
+    Content-type: application/json
+    Authorization: Bearer token
+```
+
 
 - Response OK
 
