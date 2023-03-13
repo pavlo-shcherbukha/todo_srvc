@@ -1,14 +1,31 @@
-# todo_srvc
-Node.js exptress  REST API with keycloak security
+# todo_srvc - Node.js exptress  REST API with keycloak security
 
 
-## Запуск локально
+## <a name="p1.">1. Запуск локально</a>
+
+### <a name="p1.1">1.1. Склонувати git репозиторий</a> 
+
+```bash
+  
+  git clone repo_url -b branchname
+
+```
+де:
+- repo_url url GIT РЕПОЗИТОРІЮ 
+- branchname - найменування branch
 
 
 
-### Налаштування env var
+### <a name="p1.2">1.2. Встановити залежності (npm-пакети)</a> 
 
-В  каталозі ./server  створити файл **localdev-config.json** з конфігурацією налоштованою на ваш keycloak 
+```bash
+  npm install
+```
+
+### <a name="p1.3">1.3. Підготувати файл локальних env змінних</a>
+
+Підготувати конфігурацію keycloak  та  результати конфігурації венсти в локальний файл конфігурації.
+Для цього в  каталозі ./server  створити файл **localdev-config.json** з конфігурацією налоштованою на ваш keycloak 
 
 ```json
 
@@ -20,12 +37,23 @@ Node.js exptress  REST API with keycloak security
 
 
 ```
+де:
+- KEYCLOAK_CLIENTID": ClientID в KeyCloack  
+- KEYCLOAK_REALM": Realm в Keycloack
+- KEYCLOAK_URL": URL акторизації в KeyCloack
 
+В каталозі /server/config відкоригувати файл local.json з номером порта, який буде слухати сервіс.
 
+### <a name="p1.4">1.4. Запуск додатка</a>
 
-## АПІ
+```bash
 
-### http-GET /api/health  Ознака, що сервіс  запустився
+   npm start
+```
+
+## <a name="p2."> 2. АПІ </a>
+
+### <a name="p2.1"> 2.1. http-GET /api/health  Ознака, що сервіс  запустився</a>
 
 - Method http-GET
 
@@ -41,7 +69,7 @@ Node.js exptress  REST API with keycloak security
 
 ```
 
-### http-GET /api/todos  Отримати список Todo
+### <a name="p2.2."> 2.2. http-GET /api/todos  Отримати список Todo</a>
 
 - Method http-GET
 
@@ -81,7 +109,7 @@ Node.js exptress  REST API with keycloak security
 
 
 
-### http-POST /api/todo  Додати нове  Todo у список
+### <a name="p2.3."> 2.3. http-POST /api/todo  Додати нове  Todo у список</a>
 
 - Method http-POST
 
@@ -115,7 +143,7 @@ Node.js exptress  REST API with keycloak security
 
 ```
 
-### http-GET /api/todo/:todoid  Прочитати TODO  за заданим  параметром :id
+### <a name="p2.4"> 2.4.  http-GET /api/todo/:todoid  Прочитати TODO  за заданим  параметром :id </a>
 
 
 - Method http-GET
@@ -151,7 +179,7 @@ Node.js exptress  REST API with keycloak security
 
 
 
-### http-DELETE /api/todo/:todoid  Видалити TODO  за заданим  параметром :id
+### <a name="p2.5."> 2.5.  http-DELETE /api/todo/:todoid  Видалити TODO  за заданим  параметром :id </a>
 
 
 - Method http-DELETE
