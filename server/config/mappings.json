@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "KEYCLOAK_CLIENTID": {
+        "searchPatterns": [
+            "env:KEYCLOAK_CLIENTID",
+            "file:/server/localdev-config.json:$.KEYCLOAK_CLIENTID"
+        ]
+    },
+    "KEYCLOAK_REALM": {
+        "searchPatterns": [
+            "env:KEYCLOAK_REALM",
+            "file:/server/localdev-config.json:$.KEYCLOAK_REALM"
+        ]
+    },
+    "KEYCLOAK_URL": {
+        "searchPatterns": [
+            "env:KEYCLOAK_URL",
+            "file:/server/localdev-config.json:$.KEYCLOAK_URL"
+        ]
+    }
+}
