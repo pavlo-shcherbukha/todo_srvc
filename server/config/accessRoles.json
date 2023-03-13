@@ -1,0 +1,6 @@
+﻿[
+  {"method": "GET",    "path": "/api/todos", "accessroles": ["app_editor", "app_viewer" ]},
+  {"method": "POST",   "path": "/api/todo", "accessroles": ["app_editor"]},
+  {"method": "GET",    "path": "/api/todo/:todoid", "accessroles": ["app_viewer", "app_editor" ]},
+  {"method": "DELETE", "path": "/api/todo/:todoid", "accessroles": ["app_editor"]}
+]
