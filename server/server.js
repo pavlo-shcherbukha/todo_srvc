@@ -12,6 +12,10 @@ bodyParser      = require('body-parser');
 
 query           = require('querystring');
 
+const UrlPattern = require('url-pattern');
+const rolesacs = require('./config/accessRoles.json');
+
+
 const { LogContext,  AppLogger } = require('./config/logcontext');
 var logctx= new LogContext();
 var applog= new AppLogger();
@@ -77,7 +81,13 @@ app.options('/api/todo/:todoid',  function(req, res) {
   return res.status(200).end();
 });
 
+app.get('/api/health',  function(req, res) {
+  let label='health';
+  applog.info( 'call api/health method', label);
+  let result={ "status": "UP"}
+  return res.status(200).json( result );
 
+});  
 
 
 // Включаємо  session memory store
@@ -91,163 +101,50 @@ app.use(session({
 }))
 
 
-//Поки включаємо keycloack
-//const keycloak = require('./config/keycloak-config.js').initKeycloak(memoryStore);
-//app.use(keycloak.middleware());
+// включаємо keycloack
+const keycloak = require('./config/keycloak-config.js').initKeycloak(memoryStore);
+app.use(keycloak.middleware());
 
-
-
-
-app.get('/api/health',  function(req, res) {
-  let label='health';
-  applog.info( 'call api/health method', label);
-  let result={ "status": "UP"}
-  return res.status(200).json( result );
-
-});  
-
-app.get('/api/todos',  /*keycloak.protect(  [ 'app_editor'  ]  ),*/ function(req, res) {
-  let label='todos';
-  applog.info( 'call api/todos method', label);
-  try{
-      let result=i_todos;
-      return res.status(200).json( result );
-  } 
-  catch (err){
-      applog.error( `Error ${err.message} `, label);
-      errresp=applib.HttpErrorResponse(err)
-      applog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
-      return res.status(errresp.Error.statusCode ).json(errresp);    
-
-  }
-
-});  
 
 /**
- *  request:
- *      {"name": "todo name", "description": "todo description", "owner": "todo username"}
- *  response-ok
- *      {}
+ * Перевірка доступа
+ * @param {*} token 
+ * @param {*} request 
+ * @returns 
  */
-app.post('/api/todo',  function(req, res) {
-  let label='todo';
-  applog.info( 'call api/todo method', label);
-  let body=req.body;
-  try { 
-      applog.info( 'Check propery [name]', label);
-      if (!body.hasOwnProperty("name")){
-        throw new apperror.ValidationError( 'key [name] is absend' );
-      }
-      applog.info( 'Check propery [description]', label);
-      if (!body.hasOwnProperty("description")){
-        throw new apperror.ValidationError( 'key [description] is absend' );
+function checkAccess(token, request) {
+  let label='checkAccess';
+  let is_role=false ;
+  applog.info(`checkAccess Method: ${request.method} Path: ${request.path}`, label);
 
-      }
-      applog.info( 'Check propery [owner]', label);
-      if (!body.hasOwnProperty("owner")){
-        throw new apperror.ValidationError( 'key [owner] is absend' );
-      }
-      applog.info( 'Return result', label);
-      
-      body["id"] = uuid.v4()
-      i_todos.push(  body )
-      let result={"id": body.id};
-      return res.status(200).json( result );
+  applog.info("Set session param ", label);
+  request.session["keycloak-token"]=token;
 
-  } 
-  catch (err){
-    applog.error( `Error ${err.message} `, label);
-    errresp=applib.HttpErrorResponse(err)
-    applog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
-    return res.status(errresp.Error.statusCode ).json(errresp);
-
-  }
-
-});
-
-app.get('/api/todo/:todoid', /* keycloak.protect(  [ 'app_editor', 'app_viewer'  ]  ),*/ function(req, res) {
-
-    let label='todobyid';
-    let todo_id = req.params.todoid;
-    try { 
-  
-        applog.info( 'Return todo by id', label);
-        let result=i_todos[0];
-        findtodobyid(i_todos, todo_id)
-        .then (todoidx=>{
-            applog.warn( '***************************************************************', label);
-            applog.warn( `todo index= ${todoidx}`, label);
-            applog.warn( '***************************************************************', label);
-            if ( todoidx <0 ) {
-              throw new apperror.ValidationError( `Record with id= ${todo_id} not found`  );
-
-            } else {
-                let result = i_todos[todoidx] ;
-                return res.status(200).json( result );
-            }
-          
-        })
-        .catch (err =>{
-            applog.error( `Error ${err.message} `, label);
-            errresp=applib.HttpErrorResponse(err)
-            applog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
-            return res.status(errresp.Error.statusCode ).json(errresp);
-        });
-    } 
-    catch (err){
-      applog.error( `Error ${err.message} `, label);
-      errresp=applib.HttpErrorResponse(err)
-      applog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
-      return res.status(errresp.Error.statusCode ).json(errresp);
-  
-    };
-  
-
-});  
-
-app.delete('/api/todo/:todoid', /* keycloak.protect(  [ 'app_editor', 'app_viewer'  ]  ),*/ function(req, res) {
-
-  let label='todobyid';
-  let todo_id = req.params.todoid;
-  try { 
-
-      applog.info( 'Return todo by id', label);
-      let result=i_todos[0];
-      findtodobyid(i_todos, todo_id)
-      .then (todoidx=>{
-          applog.warn( '***************************************************************', label);
-          applog.warn( `todo index= ${todoidx}`, label);
-          applog.warn( '***************************************************************', label);
-          if ( todoidx <0 ) {
-            throw new apperror.ValidationError( `Record with id= ${todo_id} not found`  );
-
-          } else {
-              let result = { "id": i_todos[todoidx].id };
-              i_todos.splice(todoidx, 1);
-              return res.status(200).json( result );
-          }
+  applog.info(`Check parmission of: ${token.content.preferred_username} - ${token.content.name} state= ${token.content.session_state}`, label);
+  let ri = 0;
+  while (ri <rolesacs.length){
+      let pattern = new UrlPattern( rolesacs[ri].path);
+      let v1=pattern.match(  request.path );
+      let v2=rolesacs[ri].method;
+      if ( pattern.match(  request.path ) !== null && request.method === rolesacs[ri].method) {
         
-      })
-      .catch (err =>{
-          applog.error( `Error ${err.message} `, label);
-          errresp=applib.HttpErrorResponse(err)
-          applog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
-          return res.status(errresp.Error.statusCode ).json(errresp);
-      });
-  } 
-  catch (err){
-    applog.error( `Error ${err.message} `, label);
-    errresp=applib.HttpErrorResponse(err)
-    applog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
-    return res.status(errresp.Error.statusCode ).json(errresp);
+        rolelist=rolesacs[ri].accessroles;
+        let i = 0;
+        while (i < rolelist.length) {
+          console.log(rolelist[i]);
+          if ( token.hasRole( rolelist[i]) ) {
+            is_role=true ;
+            break; 
 
-  };
-
-
-}); 
-
-
-
+          }
+          i++;
+        }        
+      }
+      ri++;
+  }
+  applog.info(`Check parmission : ${token.content.preferred_username} - ${token.content.name} state= ${token.content.session_state}  against Method: ${request.method} Path: ${request.path}  RESULT: ${is_role}`, label);
+  return is_role;
+}  
 
 /**
  * Find todo in array by id
@@ -265,6 +162,176 @@ function findtodobyid( todolist, todo_id ) {
   });
 };   //findtodobyid
 
+//================================================================================
+// ###################     PROTECTED API     #####################################
+//================================================================================
+
+app.get('/api/todos',  keycloak.protect( checkAccess ), function(req, res) {
+  let label='todos';
+  let ssnk=req.session['keycloak-token'];
+  let alogctx= new LogContext();
+  let alog= new AppLogger();
+  alog.LogContext=alogctx;      
+  alog.State=ssnk.content.session_state;  
+  alog.Username=ssnk.content.preferred_username;
+  alog.info( 'call api/todos method', label);
+  try{
+      let result=i_todos;
+      return res.status(200).json( result );
+  } 
+  catch (err){
+      alog.error( `Error ${err.message} `, label);
+      errresp=applib.HttpErrorResponse(err)
+      alog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
+      return res.status(errresp.Error.statusCode ).json(errresp);    
+
+  }
+
+});  
+
+/**
+ *  request:
+ *      {"name": "todo name", "description": "todo description", "owner": "todo username"}
+ *  response-ok
+ *      {}
+ */
+app.post('/api/todo',  keycloak.protect( checkAccess ),  function(req, res) {
+  let label='createtodo';
+  let ssnk=req.session['keycloak-token'];
+  let alogctx= new LogContext();
+  let alog= new AppLogger();
+  alog.LogContext=alogctx;      
+  alog.State=ssnk.content.session_state;  
+  alog.Username=ssnk.content.preferred_username;
+  alog.info( 'call post api/todo method', label);
+
+  let body=req.body;
+  try { 
+      alog.info( 'Check propery [name]', label);
+      if (!body.hasOwnProperty("name")){
+        throw new apperror.ValidationError( 'key [name] is absend' );
+      }
+      alog.info( 'Check propery [description]', label);
+      if (!body.hasOwnProperty("description")){
+        throw new apperror.ValidationError( 'key [description] is absend' );
+
+      }
+      alog.info( 'Check propery [owner]', label);
+      if (!body.hasOwnProperty("owner")){
+        throw new apperror.ValidationError( 'key [owner] is absend' );
+      }
+      alog.info( 'Return result', label);
+      
+      body["id"] = uuid.v4()
+      i_todos.push(  body )
+      let result={"id": body.id};
+      return res.status(200).json( result );
+
+  } 
+  catch (err){
+    alog.error( `Error ${err.message} `, label);
+    errresp=applib.HttpErrorResponse(err)
+    alog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
+    return res.status(errresp.Error.statusCode ).json(errresp);
+
+  }
+
+});
+
+app.get('/api/todo/:todoid', keycloak.protect( checkAccess ), function(req, res) {
+    let label='readTodo';
+    let ssnk=req.session['keycloak-token'];
+    let alogctx= new LogContext();
+    let alog= new AppLogger();
+    alog.LogContext=alogctx;      
+    alog.State=ssnk.content.session_state;  
+    alog.Username=ssnk.content.preferred_username;
+    alog.info( 'call get api/todo by todoid method', label);
+  
+    let todo_id = req.params.todoid;
+    try { 
+  
+        alog.info( 'Return todo by id', label);
+        let result=i_todos[0];
+        findtodobyid(i_todos, todo_id)
+        .then (todoidx=>{
+            alog.warn( '***************************************************************', label);
+            alog.warn( `todo index= ${todoidx}`, label);
+            alog.warn( '***************************************************************', label);
+            if ( todoidx <0 ) {
+              throw new apperror.ValidationError( `Record with id= ${todo_id} not found`  );
+
+            } else {
+                let result = i_todos[todoidx] ;
+                return res.status(200).json( result );
+            }
+          
+        })
+        .catch (err =>{
+            alog.error( `Error ${err.message} `, label);
+            errresp=applib.HttpErrorResponse(err)
+            alog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
+            return res.status(errresp.Error.statusCode ).json(errresp);
+        });
+    } 
+    catch (err){
+      alog.error( `Error ${err.message} `, label);
+      errresp=applib.HttpErrorResponse(err)
+      alog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
+      return res.status(errresp.Error.statusCode ).json(errresp);
+  
+    };
+  
+
+});  
+
+app.delete('/api/todo/:todoid', keycloak.protect( checkAccess ), function(req, res) {
+  let label='deleteTodo';
+  let ssnk=req.session['keycloak-token'];
+  let alogctx= new LogContext();
+  let alog= new AppLogger();
+  alog.LogContext=alogctx;      
+  alog.State=ssnk.content.session_state;  
+  alog.Username=ssnk.content.preferred_username;
+  alog.info( 'call delete api/todo by todoid method', label);
+
+  let todo_id = req.params.todoid;
+  try { 
+
+      alog.info( 'Return todo by id', label);
+      let result=i_todos[0];
+      findtodobyid(i_todos, todo_id)
+      .then (todoidx=>{
+          alog.warn( '***************************************************************', label);
+          alog.warn( `todo index= ${todoidx}`, label);
+          alog.warn( '***************************************************************', label);
+          if ( todoidx <0 ) {
+            throw new apperror.ValidationError( `Record with id= ${todo_id} not found`  );
+
+          } else {
+              let result = { "id": i_todos[todoidx].id };
+              i_todos.splice(todoidx, 1);
+              return res.status(200).json( result );
+          }
+        
+      })
+      .catch (err =>{
+          alog.error( `Error ${err.message} `, label);
+          errresp=applib.HttpErrorResponse(err)
+          alog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
+          return res.status(errresp.Error.statusCode ).json(errresp);
+      });
+  } 
+  catch (err){
+    alog.error( `Error ${err.message} `, label);
+    errresp=applib.HttpErrorResponse(err)
+    alog.error( `Error result ${errresp.Error.statusCode} ` + JSON.stringify( errresp )   ,label);
+    return res.status(errresp.Error.statusCode ).json(errresp);
+
+  };
+
+
+}); 
 
 
 if(!module.parent){ 
